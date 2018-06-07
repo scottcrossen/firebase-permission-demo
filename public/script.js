@@ -3,11 +3,11 @@ const auth_ui = new firebaseui.auth.AuthUI(firebase.auth());
 const get_auth_config = (callback) => {
   return {
     callbacks: {
-      signInSuccessWithAuthResult: (authResult, redirectUrl) => {
+      signInSuccessWithAuthResult: (auth_result, redirect_url) => {
         callback()
         return false
       },
-      signInSuccess: (currentUser, credential, redirectUrl) => {
+      signInSuccess: (user, credential, redirect_url) => {
         callback()
         return false
       },
