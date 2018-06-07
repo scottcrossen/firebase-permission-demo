@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <link rel="icon" href="http://icongal.com/gallery/image/5890/nuclear_atom_atomic.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.13.0/firebase.js"></script>
+    <script>
+      var config = {
+        apiKey: "AIzaSyC47XXSIzvfkho63lQqHZfD1ZAX-UoGU6Y",
+        authDomain: "staticauthdemo.firebaseapp.com",
+        databaseURL: "https://staticauthdemo.firebaseio.com",
+        projectId: "staticauthdemo",
+        storageBucket: "staticauthdemo.appspot.com",
+        messagingSenderId: "1096939823823"
+      };
+      firebase.initializeApp(config);
+    </script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.css" />
+    <script type="text/javascript" src="script.js"></script>
+    <title>Scott Crossen</title>
+  </head>
+  <body>
+    <div id="header">
+      <h1>Firebase Permission Demo</h1>
+    </div>
+    <div id="auth-container"></div>
+    <div id="loading"><p>Loading...</p></div>
+    <div id="error"><p></p></div>
+    <div id="content"><p></p></div>
+    <div id="admin-console">
+      <div id="add-admin">
+        <input placeholder="person@example.com">
+        <button>Add Admin</button>
+      </div>
+      <div id="add-user">
+        <input placeholder="person@example.com">
+        <button id='add-button'>Add User</button>
+        <button id='remove-button'>Remove User</button>
+      </div>
+    </div>
+  </body>
+</html>
