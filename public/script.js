@@ -11,18 +11,12 @@ const get_auth_config = (callback) => {
         callback()
         return false
       },
-      uiShown: () => {
-        $('#loading').hide()
-      }
+      uiShown: () => $('#loading').hide()
     },
     signInFlow: 'popup',
     signInOptions: [
       firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-      firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-      firebase.auth.TwitterAuthProvider.PROVIDER_ID,
-      firebase.auth.GithubAuthProvider.PROVIDER_ID,
       firebase.auth.EmailAuthProvider.PROVIDER_ID,
-      firebase.auth.PhoneAuthProvider.PROVIDER_ID
     ]
   }
 }
@@ -60,11 +54,12 @@ const auth_state = {
     auth_ui.start('#auth-container', auth_ui_config)
   },
   email_verified: () => {
+    console.log('Email verified')
     auth_state.signed_in()
   },
   email_not_verified: () => {
+    console.log('Email not verified')
     firebase.auth().currentUser.sendEmailVerification().then(() => {
-      console.log('User email not verified')
       hide_elements_except('content')
       $('#content p').text(`Your email address hasn\'t been verified yet. An email has been sent to ${firebase.auth().currentUser.email}. Please click on the link and then refresh this page.`)
     })
@@ -72,26 +67,19 @@ const auth_state = {
   signed_in: () => {
     console.log('User signed in')
     hide_elements_except('loading')
-    const uid = firebase.auth().currentUser ? firebase.auth().currentUser.uid : null
-    if (uid) {
-      const user_ref = firebase.database().ref(`users/${uid}`)
-      user_ref.once('value', (snapshot) => {
-        if (!snapshot.val() && firebase.auth().currentUser.email) {
-          user_ref.set({ email: firebase.auth().currentUser.email, roles: { admin: false } })
-          auth_state.invalid_permissions()
-        } else if (!snapshot.val()) {
-          auth_state.error('Authentication method not valid. Linked email address not found.')
-        } else if (snapshot.val().roles && snapshot.val().roles['admin']) {
+    firebase.database().ref(`user-data/${firebase.auth().currentUser.uid}/token-refresh`).on('value', (snapshot) =>
+      firebase.auth().currentUser.getIdTokenResult(true).then((token) => {
+        if (!!token.claims.admin) {
           auth_state.admin()
-        } else if (snapshot.val().roles && snapshot.val().roles['user']) {
+        } else if (!!token.claims.user){
           auth_state.user()
         } else {
           auth_state.invalid_permissions()
         }
+      }).catch((error) => {
+        auth_state.not_signed_in()
       })
-    } else {
-      auth_state.not_signed_in()
-    }
+    )
   },
   admin: () => {
     console.log('User is an admin')
@@ -115,44 +103,29 @@ const auth_state = {
   }
 }
 
-add_user = (email) => {
-  const all_users_ref = firebase.database().ref('users').orderByChild('email').equalTo(email)
-  all_users_ref.once('value', (snapshot) => {
-    if (snapshot.val()) {
-      Object.keys(snapshot.val()).forEach((affected_uid) =>
-        firebase.database().ref(`users/${affected_uid}/roles`).update({user: true})
-      )
-    } else {
-      auth_state.error('That user doesn\'t exist yet.')
-    }
-  })
-}
+add_admin = (email) => firebase.database().ref('pending-permissions').push({
+  email: email,
+  roles: {
+    admin: true
+  },
+  timestamp: Date.now()
+})
 
-remove_user = (email) => {
-  const all_users_ref = firebase.database().ref('users').orderByChild('email').equalTo(email)
-  all_users_ref.once('value', (snapshot) => {
-    if (snapshot.val()) {
-      Object.keys(snapshot.val()).forEach((affected_uid) =>
-        firebase.database().ref(`users/${affected_uid}/roles`).update({user: false})
-      )
-    } else {
-      auth_state.error('That user doesn\'t exist yet.')
-    }
-  })
-}
+add_user = (email) => firebase.database().ref('pending-permissions').push({
+  email: email,
+  roles: {
+    user: true
+  },
+  timestamp: Date.now()
+})
 
-add_admin = (email) => {
-  const all_users_ref = firebase.database().ref('users').orderByChild('email').equalTo(email)
-  all_users_ref.once('value', (snapshot) => {
-    if (snapshot.val()) {
-      Object.keys(snapshot.val()).forEach((affected_uid) =>
-        firebase.database().ref(`users/${affected_uid}/roles`).update({admin: true})
-      )
-    } else {
-      auth_state.error('That user doesn\'t exist yet.')
-    }
-  })
-}
+remove_user = (email) => firebase.database().ref('pending-permissions').push({
+  email: email,
+  roles: {
+    user: false
+  },
+  timestamp: Date.now()
+})
 
 $(document).ready(function() {
   $('#add-admin button').click(() => {
