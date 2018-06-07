@@ -49,9 +49,25 @@ const auth_state = {
   },
   not_signed_in: () => {
     console.log('User not signed in')
-    const auth_ui_config = get_auth_config(auth_state.signed_in)
+    const auth_ui_config = get_auth_config(() => {
+      if (firebase.auth().currentUser.emailVerified) {
+        auth_state.email_verified()
+      } else {
+        auth_state.email_not_verified()
+      }
+    })
     hide_elements_except('auth-container')
     auth_ui.start('#auth-container', auth_ui_config)
+  },
+  email_verified: () => {
+    auth_state.signed_in()
+  },
+  email_not_verified: () => {
+    firebase.auth().currentUser.sendEmailVerification().then(() => {
+      console.log('User email not verified')
+      hide_elements_except('content')
+      $('#content p').text(`Your email address hasn\'t been verified yet. An email has been sent to ${firebase.auth().currentUser.email}. Please click on the link and then refresh this page.`)
+    })
   },
   signed_in: () => {
     console.log('User signed in')
@@ -112,6 +128,19 @@ add_user = (email) => {
   })
 }
 
+remove_user = (email) => {
+  const all_users_ref = firebase.database().ref('users').orderByChild('email').equalTo(email)
+  all_users_ref.once('value', (snapshot) => {
+    if (snapshot.val()) {
+      Object.keys(snapshot.val()).forEach((affected_uid) =>
+        firebase.database().ref(`users/${affected_uid}/roles`).update({user: false})
+      )
+    } else {
+      auth_state.error('That user doesn\'t exist yet.')
+    }
+  })
+}
+
 add_admin = (email) => {
   const all_users_ref = firebase.database().ref('users').orderByChild('email').equalTo(email)
   all_users_ref.once('value', (snapshot) => {
@@ -128,9 +157,15 @@ add_admin = (email) => {
 $(document).ready(function() {
   $('#add-admin button').click(() => {
     add_admin($('#add-admin input').val())
+    $('#add-admin input').val('')
   })
-  $('#add-user button').click(() => {
+  $('#add-user button#add-button').click(() => {
     add_user($('#add-user input').val())
+    $('#add-user input').val('')
+  })
+  $('#add-user button#remove-button').click(() => {
+    remove_user($('#add-user input').val())
+    $('#add-user input,#remove-user').val('')
   })
   auth_state.init()
 })
